@@ -1,14 +1,15 @@
 ; Input/Output for NASM.
-; Operations allowed are output and input.
+; Operations allowed are output and input. Output string ends with 0.
 ; Use as below:
-;               output string, string_length
+;               output string
 ;               input  buffer, buffer_length
 
 %macro          output          1
                 
-                mov             arg, %1
+                push            eax
+                mov             eax, %1
                 call            print
-                sub             esp, [arg_len]
+                pop             eax
 
 %endmacro
 
@@ -31,33 +32,31 @@ section .text
 
 
 print:
-                push            eax
                 push            ebx
                 push            ecx
                 push            edx
+                push            edi
 
-                mov             index, -1
+                mov             edi, -1
                 call            get_string
 
-                mov             ecx, arg
-                mov             edx, arg_len
+                mov             ecx, eax
+                mov             edx, edi
                 mov             eax, 4
                 mov             ebx, 1
                 int             80h
 
+                pop             edi
                 pop             edx
                 pop             ecx
                 pop             ebx
-                pop             eax
                 ret
 
 get_string:
-                inc             index
-                cmp             [arg + index], 0
+                inc             edi
+                cmp     byte    [eax + edi], 0
                 jne             get_string
-
-                mov             arg_len, index
-
+                ret
 
 
 input_:
