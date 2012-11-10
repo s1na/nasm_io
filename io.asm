@@ -101,6 +101,7 @@ input_:
 
                 pop             ebx
                 pop             eax
+                ret
                 
 
 convert_ascii:
