@@ -33,20 +33,19 @@
 
 %endmacro
 
-%macro          dtoa            2-3 11
+%macro          dtoa            2
 
-	push	eax				
-	push	ebx
-	push	edi
+				;EBX is adress of destination
+				;EAX is source
+				push			eax	
+				push			ebx
 				
-	mov	ebx, %1
-	mov	eax, %2
-	mov	edi, %3 
-	call            convert_double
+				mov				ebx, %1
+				mov				eax, %2
+				call            convert_double
 
-	pop	edi
-	pop	ebx
-	pop	eax
+				pop				ebx
+				pop				eax
 
 %endmacro 
 
@@ -161,49 +160,56 @@ determine_decimal:
                 pop             edx
                 jmp             determine_decimal
 
+negate:
+				neg				ecx
+				mov		byte	[sign], 0
+				ret
+
+return:
+				ret
 ;macro DoubleToAscii
 convert_double:
-	push	ecx
-	push	esi
-
-	sub	ecx, ecx
-	mov	esi, 10
-	mov    byte     [sign], 0
-	cmp	eax, 0
-	jl	_negetive
-	jmp	get_numbers
-_negetive:
-	neg	eax
-	mov   byte	[sign], 1
-get_numbers:
-	cmp	eax, 0
-	jz	put_numbers
-	cdq
-	div	esi
-	add	dl, 30h
-	push	dx
-	inc	ecx
-	jmp	get_numbers
+				pushad
+				;ECX determine number of digits in EAX as Source
+				sub				ecx, ecx
+				mov				esi, 10				;ESI is for getting first number of EAX
+				mov		byte    [sign], 0			;sign of EAX
+				cmp				eax, 0
+				je				eax_is_zero
+				jl				_negetive
+				jmp				get_numbers
+_negetive:											;negate EAX and put 1 in sign
+				neg				eax
+				mov  	 byte	[sign], 1
+get_numbers:										;get numbers of EAX and increase ECX
+				cmp				eax, 0
+				jz				put_numbers
+				cdq
+				div				esi
+				add				dl, 30h				;Put first number of EAX to Stack
+				push			edx
+				inc				ecx
+				jmp				get_numbers
 put_numbers:
-	cmp   byte	[sign], 0
-	je	add_numbers
+				cmp 	  byte	[sign], 0
+				je				add_numbers
 add_negation:	
-	mov   byte	[ebx],'-'
-                inc	ebx
-	dec	edi
-add_numbers:
-	cmp	edi, 1
-	je	_done
-	pop	dx
-	mov   byte	[ebx], dl
-	inc	ebx
-	dec	edi
-	loop	add_numbers
+				mov  	byte	[ebx],'-'			;if sign is 1 add '-' character to buffer
+				inc				ebx
+add_numbers:										;pop from stack and put in buffer the number character
+				pop				edx					; to buffer
+				mov   	byte	[ebx], dl
+				inc				ebx
+				loop			add_numbers
 _done:
-	inc             ebx
-	mov   byte	[ebx], 0
-
-	pop	esi
-	pop	ecx
-	ret
+				inc             ebx
+				mov  	 byte	[ebx], 0			;add 0 to the end of  buffer to show the end of string
+				popad 
+				ret 
+eax_is_zero:
+				mov		byte	[ebx], 30h
+				inc				ebx
+				mov		byte	[ebx], 0
+				popad
+				ret
 ;endmacro DoubleToAscii
