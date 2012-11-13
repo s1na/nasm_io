@@ -165,14 +165,14 @@ convert_double:
                 ;ECX determine number of digits in EAX as Source
                 sub             ecx, ecx
                 mov             esi, 10             ;ESI is for getting first number of EAX
-                mov    byte    [sign], 0           ;sign of EAX
+                mov    byte     [sign], 0           ;sign of EAX
                 cmp             eax, 0
                 je              eax_is_zero
                 jl              _negetive
                 jmp             get_numbers
 _negetive:                                          ;negate EAX and put 1 in sign
                 neg             eax
-                mov    byte   [sign], 1
+                mov    byte     [sign], 1
 get_numbers:                                        ;get numbers of EAX and increase ECX
                 cmp             eax, 0
                 jz              put_numbers
@@ -183,25 +183,25 @@ get_numbers:                                        ;get numbers of EAX and incr
                 inc             ecx
                 jmp             get_numbers
 put_numbers:
-                cmp    byte  [sign], 0
+                cmp    byte     [sign], 0
                 je              add_numbers
 add_negation:   
-                mov    byte    [ebx],'-'           ;if sign is 1 add '-' character to buffer
+                mov    byte     [ebx],'-'           ;if sign is 1 add '-' character to buffer
                 inc             ebx
 add_numbers:                                        ;pop from stack and put in buffer the number character
                 pop             edx                 ; to buffer
-                mov    byte    [ebx], dl
+                mov    byte     [ebx], dl
                 inc             ebx
                 loop            add_numbers
 _done:
                 inc             ebx
-                mov    byte   [ebx], 0            ;add 0 to the end of  buffer to show the end of string
+                mov    byte     [ebx], 0            ;add 0 to the end of  buffer to show the end of string
                 popad 
                 ret 
 eax_is_zero:
-                mov    byte    [ebx], 30h
+                mov    byte     [ebx], 30h
                 inc             ebx
-                mov    byte    [ebx], 0
+                mov    byte     [ebx], 0
                 popad
                 ret
 ;endmacro DoubleToAscii
