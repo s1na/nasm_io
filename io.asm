@@ -77,8 +77,8 @@
                 ;EAX is source
                 pushad
 
-                mov             ebx, %1
-                mov             eax, %2
+				push			%1
+				push			%2
                 call            convert_double
 
                 popad
@@ -187,13 +187,17 @@ negate:
 
 ;macro DoubleToAscii
 convert_double:
-                pushad
                 ;ECX determine number of digits in EAX as Source
+				push			ebp					;Push ebp to get inputs in stack
+				mov				ebp, esp			;(
+				mov				ebx, [esp + 12]		;we add ebp to stack and dont mine to index that must be added
+ 				mov				eax, [esp + 8]		;ebp for accessing to parameters then must add 4 to indexs
+				pop				ebp					;)
                 sub             ecx, ecx
                 mov             esi, 10             ;ESI is for getting first number of EAX
                 mov    byte     [sign], 0           ;sign of EAX
                 cmp             eax, 0
-                je              eax_is_zero
+                je              input_is_zero
                 jl              _negetive
                 jmp             get_numbers
 _negetive:                                          ;negate EAX and put 1 in sign
@@ -219,15 +223,13 @@ add_numbers:                                        ;pop from stack and put in b
                 mov    byte     [ebx], dl
                 inc             ebx
                 loop            add_numbers
-_done:
+
                 inc             ebx
                 mov    byte     [ebx], 0            ;add 0 to the end of  buffer to show the end of string
-                popad
-                ret
-eax_is_zero:
+                ret 			8
+input_is_zero:
                 mov    byte     [ebx], 30h
                 inc             ebx
                 mov    byte     [ebx], 0
-                popad
-                ret
+                ret				8
 ;endmacro DoubleToAscii
