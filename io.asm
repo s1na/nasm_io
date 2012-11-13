@@ -1,10 +1,10 @@
 ; Input/Output for NASM.
-; Operations allowed are output, input and atod. Output string ends with 0.
+; Operations allowed are output, input, atod, dtoa, outputd and inputd. Output string ends with 0.
 ; Use as below:
 ;               output string
 ;               input  buffer, buffer_length
-;               atod   string
-;               dtoa   destination = memory adress , source = register, buffer_lenght
+;               atod   source
+;               dtoa   destination = memory adress , source = register
 ;
 ; Notes:
 ;               dtoa macro does not check the lenght of Integer and Memory,
@@ -37,8 +37,8 @@
 
                 pushad
 
-                mov             ecx, %1
-                mov             edx, %2
+                push            %1
+                push            %2
                 call            input_
 
                 popad
@@ -73,8 +73,6 @@
 
 %macro          dtoa            2
 
-                ;EBX is adress of destination
-                ;EAX is source
                 pushad
 
                 push            %1
@@ -118,11 +116,13 @@ get_string:
 
 
 input_:
+                mov             ecx, [esp + 8]
+                mov             edx, [esp + 4]
                 mov             eax, 3
                 mov             ebx, 0
                 int             80h
 
-                ret
+                ret             8
                 
 
 convert_ascii:
@@ -188,11 +188,8 @@ negate:
 ;macro DoubleToAscii
 convert_double:
                 ;ECX determine number of digits in EAX as Source
-                push            ebp                 ;Push ebp to get inputs in stack
-                mov             ebp, esp            ;(
-                mov             ebx, [esp + 12]     ;we add ebp to stack and dont mine to index that must be added
-                mov             eax, [esp + 8]      ;ebp for accessing to parameters then must add 4 to indexs
-                pop             ebp                 ;)
+                mov             ebx, [esp + 8]     ;we add ebp to stack and dont mine to index that must be added
+                mov             eax, [esp + 4]      ;ebp for accessing to parameters then must add 4 to indexs
                 sub             ecx, ecx
                 mov             esi, 10             ;ESI is for getting first number of EAX
                 mov    byte     [sign], 0           ;sign of EAX
