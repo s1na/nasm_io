@@ -14,39 +14,54 @@
 
 %macro          output          1
                 
-                push            eax
+                pushad
                 mov             eax, %1
                 call            print
-                pop             eax
+                popad
 
 %endmacro
 
 %macro          input           2
-                
+
+                pushad
                 mov             ecx, %1
                 mov             edx, %2
                 call            input_
+                popad
 
 %endmacro
 
 %macro          atod            1
 
+                push            ebx
+                push            ecx
+                push            edx
+                push            esi
+                push            edi
+
                 mov             edx, %1
                 call            convert_ascii
+
+                pop             edi
+                pop             esi
+                pop             edx
+                pop             ecx
+                pop             ebx
 
 %endmacro
 
 %macro          dtoa            2
 
-                push            ebx
-                push            ecx
-
+                pushad
                 mov             ebx, %1
                 mov             ecx, %2
-                call            convert_decimal
 
-                pop             ecx
-                pop             ebx
+                mov    dword    [ebx], 0
+                mov    dword    [ebx + 4], 0
+                mov    dword    [ebx + 8], 0
+                mov    byte     [ebx + 10], 0
+                call            convert_decimal
+                popad
 
 %endmacro
 
@@ -60,11 +75,6 @@ section .text
 
 
 print:
-                push            ebx
-                push            ecx
-                push            edx
-                push            edi
-
 
                 mov             edi, -1
                 call            get_string
@@ -76,11 +86,7 @@ print:
                 int             80h
 
 
-                pop             edi
-                pop             edx
-                pop             ecx
-                pop             ebx
-                ret
+               ret
 
 get_string:
                 inc             edi
@@ -90,17 +96,10 @@ get_string:
 
 
 input_:
-                push            eax
-                push            ebx
-
-
                 mov             eax, 3
                 mov             ebx, 0
                 int             80h
 
-
-                pop             ebx
-                pop             eax
                 ret
                 
 
@@ -109,16 +108,13 @@ convert_ascii:
                 ; bh contains the sign. Ecx will have the result temporarily, then it'll
                 ; be moved to eax.
 
-                push            edi
-                push            ebx
-                push            ecx
-
-                
                 mov             edi, -1
                 mov             ecx, 0
-                mov    byte     [sign], 0
                 mov             eax, 0
-                call            determine_sign
+                mov    byte     [sign], 0
+                jmp             determine_sign
+
+convert_continue:
                 call            determine_decimal
 
                 cmp    byte     [sign], 1
@@ -126,20 +122,16 @@ convert_ascii:
 
                 mov             eax, ecx
 
-                pop             ecx
-                pop             ebx
-                pop             edi
                 ret
 
 determine_sign:
                 cmp    byte     [edx], 2dh
-                je              non_positive
-                ret
+                jne             convert_continue
 
 non_positive:
                 mov    byte     [sign], 1
                 inc             edi
-                ret
+                jmp             convert_continue
 
 determine_decimal:
                 mov             ebx, 0
@@ -167,19 +159,17 @@ convert_decimal:
                 ; Eax and edx are used for computations.
                 ; Beware that numbers are assumed signed.
 
-                push            eax
-                push            edx
-                push            edi
-
                 mov             edi, 10
                 mov    byte     [ebx + 11], 0
                 mov    byte     [sign], 0
                 add             ecx, 0
-                js              negate
-                call            determine_ascii
+                js              negate2
+                jmp             determine_ascii
+
+.check_sign:
                 cmp    byte     [sign], 1
                 je              minus_sign
-
+.finish_up:
                 mov             eax, 0
                 mov             al, 1                           ; If there's no minus sign,
                 sub             al, [sign]                      ; there should be an additional
@@ -188,20 +178,21 @@ convert_decimal:
                 call            empty_left
 
 
-                pop             edi
-                pop             edx
-                pop             eax
                 ret
 
 minus_sign:
                 mov    byte     [ebx + edi], 2dh
                 neg             ecx
-                inc             edi
+                jmp             convert_decimal.finish_up
+negate2:
+                neg             ecx
+                mov    byte     [sign], 1
+
 
 determine_ascii:
                 dec             edi
                 cmp             ecx, 0
-                je              return
+                je              convert_decimal.check_sign
 
                 mov             eax, ecx
                 mov             ecx, 10
@@ -222,11 +213,12 @@ leading_space:
                 mov    byte     [ebx + edi], 20h
                 jmp             empty_left
 
-negate:
-                neg             ecx
-                mov    byte     [sign], 1                       ; This is for dtoa
-
 return:
                 ret
 
 
+negate:
+                neg             ecx
+                mov    byte     [sign], 0                       ; This is for dtoa
+                mov             eax, ecx
+                ret
