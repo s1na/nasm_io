@@ -4,13 +4,10 @@
 ;               output string
 ;               input  buffer, buffer_length
 ;               atod   string
-;               dtoa   buffer, number
+;               dtoa   destination = memory adress , source = register, buffer_lenght
 ;
 ; Notes:
-;    If the number isnt fit for a doubleword in atod the higher part is ignored.
-;    Dtoa counts the number signed and puts a '-' before it.
-;    Dtoa buffer should be exactly 11 bytes. If the number is smaller however\
-;     leading spaces are used to fill the remaining bytes.
+;               dtoa macro does not check the lenght of Integer and Memory,
 
 %macro          output          1
                 
@@ -36,14 +33,12 @@
                 push            ebx
                 push            ecx
                 push            edx
-                push            esi
                 push            edi
 
                 mov             edx, %1
                 call            convert_ascii
 
                 pop             edi
-                pop             esi
                 pop             edx
                 pop             ecx
                 pop             ebx
@@ -52,18 +47,17 @@
 
 %macro          dtoa            2
 
+                ;EBX is adress of destination
+                ;EAX is source
                 pushad
-                mov             ebx, %1
-                mov             ecx, %2
+                
+                mov ebx, %1
+                mov eax, %2
+                call            convert_double
 
-                mov    dword    [ebx], 0
-                mov    dword    [ebx + 4], 0
-                mov    dword    [ebx + 8], 0
-                mov    byte     [ebx + 10], 0
-                call            convert_decimal
                 popad
 
-%endmacro
+%endmacro 
 
 
 
@@ -86,7 +80,7 @@ print:
                 int             80h
 
 
-               ret
+                ret
 
 get_string:
                 inc             edi
@@ -154,65 +148,6 @@ determine_decimal:
                 pop             edx
                 jmp             determine_decimal
 
-convert_decimal:
-                ; The memory addr of buffer is kept in ebx, the number itself is in ecx.
-                ; Eax and edx are used for computations.
-                ; Beware that numbers are assumed signed.
-
-                mov             edi, 10
-                mov    byte     [ebx + 11], 0
-                mov    byte     [sign], 0
-                add             ecx, 0
-                js              negate2
-                jmp             determine_ascii
-
-.check_sign:
-                cmp    byte     [sign], 1
-                je              minus_sign
-.finish_up:
-                mov             eax, 0
-                mov             al, 1                           ; If there's no minus sign,
-                sub             al, [sign]                      ; there should be an additional
-                add             edi, eax                        ; space.
-
-                call            empty_left
-
-
-                ret
-
-minus_sign:
-                mov    byte     [ebx + edi], 2dh
-                neg             ecx
-                jmp             convert_decimal.finish_up
-negate2:
-                neg             ecx
-                mov    byte     [sign], 1
-
-
-determine_ascii:
-                dec             edi
-                cmp             ecx, 0
-                je              convert_decimal.check_sign
-
-                mov             eax, ecx
-                mov             ecx, 10
-                mov             edx, 0
-                div             ecx
-                mov             ecx, eax
-                add             edx, 30h
-                mov    byte     [ebx + edi], dl
-                jmp             determine_ascii
-
-empty_left:
-                dec             edi
-                cmp             edi, 0
-                jge             leading_space
-                ret
-
-leading_space:
-                mov    byte     [ebx + edi], 20h
-                jmp             empty_left
-
 return:
                 ret
 
@@ -222,3 +157,51 @@ negate:
                 mov    byte     [sign], 0                       ; This is for dtoa
                 mov             eax, ecx
                 ret
+
+
+;macro DoubleToAscii
+convert_double:
+                pushad
+                ;ECX determine number of digits in EAX as Source
+                sub             ecx, ecx
+                mov             esi, 10             ;ESI is for getting first number of EAX
+                mov    byte    [sign], 0           ;sign of EAX
+                cmp             eax, 0
+                je              eax_is_zero
+                jl              _negetive
+                jmp             get_numbers
+_negetive:                                          ;negate EAX and put 1 in sign
+                neg             eax
+                mov    byte   [sign], 1
+get_numbers:                                        ;get numbers of EAX and increase ECX
+                cmp             eax, 0
+                jz              put_numbers
+                cdq
+                div             esi
+                add             dl, 30h             ;Put first number of EAX to Stack
+                push            edx
+                inc             ecx
+                jmp             get_numbers
+put_numbers:
+                cmp    byte  [sign], 0
+                je              add_numbers
+add_negation:   
+                mov    byte    [ebx],'-'           ;if sign is 1 add '-' character to buffer
+                inc             ebx
+add_numbers:                                        ;pop from stack and put in buffer the number character
+                pop             edx                 ; to buffer
+                mov    byte    [ebx], dl
+                inc             ebx
+                loop            add_numbers
+_done:
+                inc             ebx
+                mov    byte   [ebx], 0            ;add 0 to the end of  buffer to show the end of string
+                popad 
+                ret 
+eax_is_zero:
+                mov    byte    [ebx], 30h
+                inc             ebx
+                mov    byte    [ebx], 0
+                popad
+                ret
+;endmacro DoubleToAscii
