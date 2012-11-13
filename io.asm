@@ -10,25 +10,50 @@
 ;               dtoa macro does not check the lenght of Integer and Memory,
 
 %macro          output          1
-                
+
                 pushad
+
                 mov             eax, %1
                 call            print
+
                 popad
+
+%endmacro
+
+%macro          endl            0
+
+                output          new_line
+
+%endmacro
+
+%macro          outputd         1
+
+                dtoa            buf, %1
+                output          buf
 
 %endmacro
 
 %macro          input           2
 
                 pushad
+
                 mov             ecx, %1
                 mov             edx, %2
                 call            input_
+
                 popad
 
 %endmacro
 
-%macro          atod            1
+%macro          inputd          0-1 eax
+
+                input           buf, 11
+                atod            buf
+                mov             %1, eax
+
+%endmacro
+
+%macro          atod            1-2 eax
 
                 push            ebx
                 push            ecx
@@ -37,6 +62,7 @@
 
                 mov             edx, %1
                 call            convert_ascii
+                mov             %2, ecx
 
                 pop             edi
                 pop             edx
@@ -50,9 +76,9 @@
                 ;EBX is adress of destination
                 ;EAX is source
                 pushad
-                
-                mov ebx, %1
-                mov eax, %2
+
+                mov             ebx, %1
+                mov             eax, %2
                 call            convert_double
 
                 popad
@@ -64,9 +90,11 @@
 section .data
 sign:           db              0
 
+section .bss
+buf:            resb            11
 
 section .text
-
+new_line:       db              10, 0
 
 print:
 
@@ -113,8 +141,6 @@ convert_continue:
 
                 cmp    byte     [sign], 1
                 je              negate
-
-                mov             eax, ecx
 
                 ret
 
@@ -196,8 +222,8 @@ add_numbers:                                        ;pop from stack and put in b
 _done:
                 inc             ebx
                 mov    byte     [ebx], 0            ;add 0 to the end of  buffer to show the end of string
-                popad 
-                ret 
+                popad
+                ret
 eax_is_zero:
                 mov    byte     [ebx], 30h
                 inc             ebx
