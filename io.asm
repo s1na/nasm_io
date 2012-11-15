@@ -221,7 +221,6 @@ add_numbers:                                        ;pop from stack and put in b
                 inc             ebx
                 loop            add_numbers
 
-                inc             ebx
                 mov    byte     [ebx], 0            ;add 0 to the end of  buffer to show the end of string
                 ret             8
 input_is_zero:
