@@ -209,10 +209,10 @@ _negetive:                                          ;negate EAX and put 1 in sig
                 mov    byte     [sign], 1
 get_numbers:                                        ;get numbers of EAX and increase ECX
                 cmp             eax, 0
-                jz              put_numbers
+                je              put_numbers
                 cdq
                 div             esi
-                add             dl, 30h             ;Put first number of EAX to Stack
+                add             edx, 30h             ;Put first number of EAX to Stack
                 push            edx
                 inc             ecx
                 jmp             get_numbers
@@ -228,7 +228,6 @@ add_numbers:                                        ;pop from stack and put in b
                 inc             ebx
                 loop            add_numbers
 
-                inc             ebx
                 mov    byte     [ebx], 0            ;add 0 to the end of  buffer to show the end of string
                 ret             8
 input_is_zero:
