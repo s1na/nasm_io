@@ -48,26 +48,31 @@
 %macro          inputd          0-1 eax
 
                 input           buf, 11
-                atod            buf
-                mov             %1, eax
+                atod            buf, %1
+
 
 %endmacro
 
 %macro          atod            1-2 eax
 
+                push            eax
                 push            ebx
                 push            ecx
                 push            edx
                 push            edi
 
-                mov             edx, %1
+                push            %1
                 call            convert_ascii
-                mov             %2, ecx
+                add             esp, 4
+                mov             [dbuf], ecx
 
                 pop             edi
                 pop             edx
                 pop             ecx
                 pop             ebx
+                pop             eax
+
+                mov             %2, [dbuf]
 
 %endmacro
 
@@ -90,6 +95,7 @@ sign:           db              0
 
 section .bss
 buf:            resb            11
+dbuf:           resd            1
 
 section .text
 new_line:       db              10, 0
@@ -129,6 +135,7 @@ convert_ascii:
                 ; The ascii code's address is in edx, calculations will happen in eax
                 ; bh contains the sign. Ecx will have the result temporarily, then it'll
                 ; be moved to eax.
+                mov             edx, [esp + 4]
 
                 mov             edi, -1
                 mov             ecx, 0
